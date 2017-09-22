@@ -31,67 +31,94 @@ public class PartieOrdinateur implements Runnable {
 	}
 	
 	public void run() {
+		
 		PrintWriter out;
 		int nbrEssais = 10;
-		
-		
+		char lettre;
+//=========================================================
+		ArrayList<Character> lettresEssayees = new ArrayList<>();
+
 		try {
 			out = new PrintWriter(socket.getOutputStream());
 			out.println("Vous etes le temoin!");
 			out.flush();
-			
-			
-			String motMystere = "eclipse"; 		  //mot que la personne doit trouver
-			int nbrLettre = motMystere.length(); //nombre de lettre du mot mystère
-			String motAffiche = ""; 			//ce qui sera afficher à l'écran de l'usager
-			
-			//détermine le nombre de _ a afficher par rapport au mot mystère
+
+
+			String motMystere = UDPClient.envoyerMessage("AAAAA").toLowerCase();//mot que la personne doit trouver
+			System.out.println(motMystere);
+			int nbrLettre = motMystere.length(); //nombre de lettre du mot mystÃ¨re
+			String motAffiche = ""; //ce qui sera afficher Ã  l'Ã©cran de l'usager
+
+			//dÃ©termine le nombre de _ a afficher par rapport au mot mystÃ¨re
 			for(int i =0 ; i<nbrLettre;i++){
 				motAffiche += "-";
 			}
-			//Affiche la progression du joueur et le nombre de lettres du mot
+			//Affiche  le nombre de lettres du mot mystÃ¨re
 			out.println("Mot choisi: "+motAffiche + "(" + nbrLettre + " lettres)");
 			out.flush();
-	        
-			
-	        //vérifie si la lettre entrée est dans le mot mystère
+       
+
+			//vÃ©rifie si la lettre entrÃ©e est dans le mot mystÃ¨re
 			//**** http://www.cs.jhu.edu/~joanne/cs107/code/StaticMethods/hangmanMethods.java ****
 			//===================================================================
 			while(nbrEssais > 0 && motAffiche.contains("-")){
-				
+
 				out.println("Entrez une lettre. Il reste "+ nbrEssais + " essais" );
 				out.flush();
-				
+
 				BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		        String reponse = in.readLine();
-		        
-		        if(reponse.length() > 1)
-		        {
-		        	int longeur = reponse.length();
-		        	char lettre;
-		        	
-		        	for(int i =0;i<longeur;i++)
-		        	{
-		        		 lettre = reponse.charAt(i);
-		        		 
-		        		 nbrEssais = DetermineEssais(motMystere, lettre, nbrEssais);
-		        		 motAffiche = DetermineLettre(motMystere, lettre, out, motAffiche, nbrEssais, nbrLettre);
-		        	}
-		        }
-		        else
-		        {
-		        	char lettre;
-		        	lettre = reponse.charAt(0);
-		        
-		        	nbrEssais = DetermineEssais(motMystere, lettre, nbrEssais);
-       		 		motAffiche = DetermineLettre(motMystere, lettre, out, motAffiche, nbrEssais, nbrLettre);
-		     
-		        }
+				String reponse = in.readLine();
+				
+				
+       
+				if(reponse.length() > 1)//si l'utilisateur entre un mot
+				{
+					int longeur = reponse.length();
+					
+					for(int i =0;i<longeur;i++)
+					{
+						lettre = reponse.charAt(i);
+						
+						if(!lettresEssayees.contains(lettre))
+						{
+							lettresEssayees.add(lettre);
+							nbrEssais = DetermineEssais(motMystere, lettre, nbrEssais);
+							motAffiche = DetermineLettre(motMystere, lettre, out, motAffiche, nbrEssais, nbrLettre,lettresEssayees);
+							
+							if(nbrEssais == 0)
+								break;
+						}
+						else
+						{
+							out.println("Lettre deja utilisee");
+						}   
+					}
+				}
+				else // si l'utilisateur entre seulement 1 lettre
+				{
+					lettre = reponse.charAt(0);
+					
+					if(!lettresEssayees.contains(lettre))
+					{
+						lettresEssayees.add(lettre);
+						nbrEssais = DetermineEssais(motMystere, lettre, nbrEssais);
+						motAffiche = DetermineLettre(motMystere, lettre, out, motAffiche, nbrEssais, nbrLettre,lettresEssayees);
+						
+						if(nbrEssais == 0)
+							break;
+					}
+					else
+					{
+						out.println("Lettre deja utilisee");
+					}
+    
+				}
 			}
 			//===================================================================
-			
+
 			//Fin de la partie
 			//===================================================================
+			
 			if(nbrEssais == 0){
 				out.println("Vous avez perdu!!!");
 				out.println("\n_________");
@@ -114,19 +141,20 @@ public class PartieOrdinateur implements Runnable {
 				out.println("  (___)__.|_____");
 				out.flush();
 			}
-			
+
 			out.println("Bye xoxo");
 			out.flush();
 			//===================================================================
-		
+
 		}
 		catch (IOException e) 
 		{
 			e.printStackTrace();
 		}
 
-	
-	
+
+
+
 	}
 
 	private int DetermineEssais(String motMystere, char lettre, int nbrEssais) {
